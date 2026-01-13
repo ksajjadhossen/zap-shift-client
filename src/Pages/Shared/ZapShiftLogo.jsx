@@ -3,9 +3,9 @@ import logo from "../../assets/assets/logo.png";
 
 const ZapShiftLogo = () => {
   return (
-    <div className=" flex">
-      <img src={logo} alt="logo" />
-      <h3 className="text-2xl">ZapShift</h3>
+    <div className=" flex items-end ">
+      <img className="mb-2" src={logo} alt="logo" />
+      <h3 className="text-3xl font-extrabold -ms-2">ZapShift</h3>
     </div>
   );
 };
