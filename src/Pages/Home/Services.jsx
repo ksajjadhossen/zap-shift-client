@@ -1,51 +1,15 @@
 import React from "react";
 import serviceIcon from "../../assets/assets/service.png";
+import servicesData from "../../assets/data/services.json";
 
 const Services = () => {
-  const services = [
-    {
-      id: 1,
-      title: "Express & Guaranteed Delivery",
-      description:
-        "We deliver parcels within Dhaka (24/48 hours). Pick up, Pack and Dispatch. Our own delivery ecosystem is structured to help businesses grow big or small.",
-      highlight: false,
-    },
-    {
-      id: 2,
-      title: "Nationwide Delivery",
-      description:
-        "We deliver parcels nationwide with home delivery in every district ensuring your product reach maximum customers. (3-5 Days)",
-      highlight: true,
-    },
-    {
-      id: 3,
-      title: "Fulfillment Solution",
-      description:
-        "We also offer customized storage and inventory management support — a first-mile solution to packaging, smoother and support.",
-      highlight: false,
-    },
-    {
-      id: 4,
-      title: "Cash on Home Delivery",
-      description:
-        "COD and on delivery payment in Bangladesh with guaranteed safety of your product.",
-      highlight: false,
-    },
-    {
-      id: 5,
-      title: "Corporate Service / Contract Logistics",
-      description:
-        "Customized exclusive service and dedicated warehouse and inventory management support.",
-      highlight: false,
-    },
-    {
-      id: 6,
-      title: "Parcel Return",
-      description:
-        "Through our reverse logistics facility, we allow our customers to return or exchange their products with online business merchants.",
-      highlight: false,
-    },
-  ];
+  // Map JSON data to component structure, adding IDs and highlight logic
+  const services = servicesData.map((service, index) => ({
+    ...service,
+    id: index + 1,
+    // Highlight "Nationwide Delivery" or the second item to match previous design
+    highlight: service.title.includes("Nationwide") || index === 1,
+  }));
 
   return (
     <div className="py-20 bg-[#003C3C]">
@@ -55,9 +19,9 @@ const Services = () => {
             Our Services
           </h2>
           <p className="text-gray-300 max-w-2xl mx-auto">
-            Enjoy fast, reliable parcel delivery with real-time tracking and zero
-            hassle. From personal packages to business shipments — we deliver on
-            time, every time.
+            Enjoy fast, reliable parcel delivery with real-time tracking and
+            zero hassle. From personal packages to business shipments — we
+            deliver on time, every time.
           </p>
         </div>
 
@@ -72,7 +36,7 @@ const Services = () => {
               }`}
             >
               <div className="w-16 h-16 mx-auto mb-6 bg-red-50 rounded-full flex items-center justify-center">
-                 {/* Using the service icon or a placeholder */}
+                {/* Using the service icon or a placeholder */}
                 <img
                   src={serviceIcon}
                   alt={service.title}
@@ -80,7 +44,9 @@ const Services = () => {
                 />
               </div>
               <h3 className="text-xl font-bold mb-4">{service.title}</h3>
-              <p className={`text-sm ${service.highlight ? "text-gray-800" : "text-gray-500"}`}>
+              <p
+                className={`text-sm ${service.highlight ? "text-gray-800" : "text-gray-500"}`}
+              >
                 {service.description}
               </p>
             </div>

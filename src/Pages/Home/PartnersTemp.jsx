@@ -8,7 +8,7 @@ import star from "../../assets/assets/brands/star.png";
 import startPeople from "../../assets/assets/brands/start_people.png";
 import randstad from "../../assets/assets/brands/randstad.png";
 
-const Partners = () => {
+const PartnersTemp = () => {
   const brands = [casio, amazon, moonstar, star, startPeople, randstad];
 
   return (
@@ -43,4 +43,4 @@ const Partners = () => {
   );
 };
 
-export default Partners;
+export default PartnersTemp;
