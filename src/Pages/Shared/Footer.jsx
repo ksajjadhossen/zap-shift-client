@@ -6,7 +6,7 @@ const Footer = () => {
     <footer className="bg-black text-white py-16">
       <div className="container mx-auto px-4 flex flex-col items-center text-center">
         <div className="mb-6">
-          <ZapShiftLogo></ZapShiftLogo>
+          <ZapShiftLogo className="text-white"></ZapShiftLogo>
         </div>
         <p className="text-gray-400 max-w-2xl mb-10 text-sm">
           Enjoy fast, reliable parcel delivery with real-time tracking and zero
