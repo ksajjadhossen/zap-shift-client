@@ -1,23 +1,27 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { FcGoogle } from "react-icons/fc";
-import { FiUpload } from "react-icons/fi";
 import authImage from "../../assets/assets/authImage.png";
 import ZapShiftLogo from "../Shared/ZapShiftLogo";
 import imageUploadIcon from "../../assets/assets/image-upload-icon.png"; // Assuming this is the asset
+import useAuth from "../../hooks/useAuth";
 
 const Register = () => {
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
   const [preview, setPreview] = useState(null);
-
+  const { createUser } = useAuth();
   const onSubmit = (data) => {
-    console.log("Register Data:", data);
-    // Handle registration logic here
+    createUser(data.email, data.password)
+      .then(() => {
+        navigate("/");
+      })
+      .catch((err) => console.log(err));
   };
 
   const handleImageChange = (e) => {
@@ -28,7 +32,7 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white text-black">
       {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-20 relative">
         {/* Logo */}

@@ -1,20 +1,42 @@
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { FcGoogle } from "react-icons/fc";
 import authImage from "../../assets/assets/authImage.png";
 import ZapShiftLogo from "../Shared/ZapShiftLogo";
+import useAuth from "../../hooks/useAuth";
 
 const Login = () => {
+  const navigate = useNavigate();
   const {
+    getValues,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
+  const { signInUser, handleForgotPassword } = useAuth();
+  const handleReset = () => {
+    const email = getValues("email");
 
-  const onSubmit = (data) => {
+    if (!email) {
+      return alert("Please enter your email");
+    }
+    handleForgotPassword(email)
+      .then(() => {
+        navigate("/reset-password");
+      })
+      .catch((error) => {
+        alert(error.message);
+      });
+  };
+
+  const createUser = (data) => {
     console.log("Login Data:", data);
-    // Handle login logic here
+    signInUser(data.email, data.password)
+      .then(() => {
+        navigate("/");
+      })
+      .catch((err) => console.log(err));
   };
 
   return (
@@ -24,7 +46,7 @@ const Login = () => {
         {/* Logo */}
         <div className="absolute top-8 left-8 lg:left-12">
           <Link to="/">
-            <ZapShiftLogo className=""></ZapShiftLogo>
+            <ZapShiftLogo className="text-black"></ZapShiftLogo>
           </Link>
         </div>
 
@@ -32,7 +54,7 @@ const Login = () => {
           <h2 className="text-4xl font-bold text-black mb-2">Welcome Back</h2>
           <p className="text-gray-500 mb-8">Login with ZapShift</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(createUser)} className="space-y-5">
             {/* Email Field */}
             <div className="form-control">
               <label className="label">
@@ -71,7 +93,7 @@ const Login = () => {
               <input
                 type="password"
                 placeholder="Password"
-                className={`input input-bordered w-full bg-white border-gray-200 focus:border-[#B6F01E] focus:outline-none ${
+                className={`input input-bordered w-full text-black bg-white border-gray-200 focus:border-[#B6F01E] focus:outline-none ${
                   errors.password ? "input-error" : ""
                 }`}
                 {...register("password", {
@@ -88,9 +110,14 @@ const Login = () => {
                 </span>
               )}
               <div className="text-right mt-1">
-                <a href="#" className="text-gray-500 text-sm hover:underline">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  href="#"
+                  className="text-gray-500 text-sm hover:underline"
+                >
                   Forget Password?
-                </a>
+                </button>
               </div>
             </div>
 
