@@ -14,7 +14,7 @@ const Login = () => {
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const { signInUser, handleForgotPassword } = useAuth();
+  const { signInUser, handleForgotPassword, signInWithGoogle } = useAuth();
   const handleReset = () => {
     const email = getValues("email");
 
@@ -30,6 +30,17 @@ const Login = () => {
       });
   };
 
+  const handleGoogleButtonClick = () => {
+    signInWithGoogle()
+      .then((result) => {
+        const user = result.user;
+        console.log(user);
+        navigate("/");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
   const createUser = (data) => {
     console.log("Login Data:", data);
     signInUser(data.email, data.password)
@@ -145,7 +156,10 @@ const Login = () => {
           <div className="divider my-6 text-gray-400">Or</div>
 
           {/* Google Login */}
-          <button className="btn w-full btn-outline border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-black font-semibold rounded-lg normal-case flex items-center gap-2">
+          <button
+            onClick={handleGoogleButtonClick}
+            className="btn w-full btn-outline border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-black font-semibold rounded-lg normal-case flex items-center gap-2"
+          >
             <FcGoogle className="text-xl" />
             Login with google
           </button>

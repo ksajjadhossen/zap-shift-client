@@ -15,7 +15,18 @@ const Register = () => {
     formState: { errors },
   } = useForm();
   const [preview, setPreview] = useState(null);
-  const { createUser } = useAuth();
+  const { createUser, signInWithGoogle } = useAuth();
+  const handleGoogleButtonClick = () => {
+    signInWithGoogle()
+      .then((result) => {
+        const user = result.user;
+        console.log(user);
+        navigate("/");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
   const onSubmit = (data) => {
     createUser(data.email, data.password)
       .then(() => {
@@ -187,7 +198,10 @@ const Register = () => {
           <div className="divider my-4 text-gray-400">Or</div>
 
           {/* Google Register */}
-          <button className="btn w-full btn-outline border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-black font-semibold rounded-lg normal-case flex items-center gap-2">
+          <button
+            onClick={handleGoogleButtonClick}
+            className="btn w-full btn-outline border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-black font-semibold rounded-lg normal-case flex items-center gap-2"
+          >
             <FcGoogle className="text-xl" />
             Register with google
           </button>
