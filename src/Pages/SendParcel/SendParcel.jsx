@@ -1,20 +1,34 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast, Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import Swal from "sweetalert2";
 import divisions from "../../assets/data/division.json";
 import warehouses from "../../assets/data/warehouses.json";
+import useAuth from "../../hooks/useAuth";
 
 const SendParcel = () => {
+  const { user } = useAuth();
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
       parcelType: "document",
     },
   });
+
+  // Prefill sender details if user is logged in
+  useEffect(() => {
+    if (user?.displayName) {
+      setValue("senderName", user.displayName);
+    }
+    if (user?.phoneNumber) {
+      setValue("senderPhone", user.phoneNumber);
+    }
+  }, [user, setValue]);
 
   // Watch for dynamic filtering and radio selection
   const senderDivision = watch("senderDivision");
@@ -36,38 +50,117 @@ const SendParcel = () => {
     const isWithinCity = senderDistrict === receiverDistrict;
     let price = 0;
     const parcelWeight = parseFloat(weight) || 0;
+    let breakdown = [];
 
     if (parcelType === "document") {
       price = isWithinCity ? 60 : 80;
+      breakdown.push(
+        `Base Charge (${isWithinCity ? "Within City" : "Outside City"}): ${price} Taka`,
+      );
     } else {
       if (parcelWeight <= 3) {
         price = isWithinCity ? 110 : 150;
+        breakdown.push(
+          `Base Charge (≤ 3kg, ${isWithinCity ? "Within City" : "Outside City"}): ${price} Taka`,
+        );
       } else {
         const extraWeight = Math.ceil(parcelWeight - 3);
         const extraWeightCharge = extraWeight * 40;
+
         if (isWithinCity) {
-          price = 110 + extraWeightCharge;
+          const basePrice = 110;
+          price = basePrice + extraWeightCharge;
+          breakdown.push(`Base Charge (Within City): ${basePrice} Taka`);
+          breakdown.push(
+            `Extra Weight Charge (${extraWeight} kg * 40): ${extraWeightCharge} Taka`,
+          );
         } else {
-          price = 150 + extraWeightCharge + 40;
+          const basePrice = 150;
+          const extraCharge = 40;
+          price = basePrice + extraWeightCharge + extraCharge;
+          breakdown.push(`Base Charge (Outside City): ${basePrice} Taka`);
+          breakdown.push(
+            `Extra Weight Charge (${extraWeight} kg * 40): ${extraWeightCharge} Taka`,
+          );
+          breakdown.push(`Additional Service Charge: ${extraCharge} Taka`);
         }
       }
     }
-    return price;
+    return { price, breakdown };
+  };
+
+  const generateTrackingId = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let randomPart = "";
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `DXP-2026-${randomPart}`;
   };
 
   const onSubmit = (data) => {
-    const price = calculatePrice(data);
-    toast.success(`Estimated Delivery Charge: ${price} Taka`, {
-      duration: 5000,
-      position: "top-center",
-      style: {
-        background: "#333",
-        color: "#fff",
-        fontSize: "18px",
+    const { price, breakdown } = calculatePrice(data);
+
+    // Prepare complete data object
+    const orderData = {
+      ...data,
+      trackingId: generateTrackingId(),
+      status: "Pending",
+      bookingDate: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      estimatedDeliveryDate: new Date(
+        Date.now() + 3 * 24 * 60 * 60 * 1000,
+      ).toISOString(), // +3 days
+      estimatedCost: price,
+      senderId: user?.uid || "guest",
+      senderEmail: user?.email || "unknown",
+      senderPhoto: user?.photoURL || null,
+      userRole: "Basic", // Default role
+      clientIp: "127.0.0.1", // Placeholder, needs backend to capture real IP
+      priceBreakdown: breakdown,
+    };
+
+    Swal.fire({
+      title:
+        '<h3 class="text-2xl font-bold text-[#002D2D]">Confirm Booking</h3>',
+      html: `
+        <div class="text-left space-y-2 text-sm">
+          <p><strong>Tracking ID:</strong> <span class="text-blue-600">${orderData.trackingId}</span></p>
+          <p><strong>Sender:</strong> ${orderData.senderName}</p>
+          <p><strong>Receiver:</strong> ${orderData.receiverName}</p>
+          <p><strong>Route:</strong> ${orderData.senderDistrict} ➝ ${orderData.receiverDistrict}</p>
+          <hr class="my-2"/>
+          <p class="font-bold text-[#002D2D]">Cost Breakdown:</p>
+          <ul class="list-disc pl-5 text-gray-600">
+            ${breakdown.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+          <p class="text-xl font-bold text-right mt-4 text-[#C1F04C] bg-[#002D2D] p-2 rounded">Total: ${price} Taka</p>
+        </div>
+      `,
+      icon: "info",
+      showCancelButton: true,
+      confirmButtonColor: "#002D2D",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Confirm & Send",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "rounded-[20px]",
       },
-      icon: "💰",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Here you would typically send data to backend
+        console.log("Final Order Data:", orderData);
+
+        Swal.fire({
+          title: "Booking Confirmed!",
+          text: `Your parcel with ID ${orderData.trackingId} has been placed successfully.`,
+          icon: "success",
+          confirmButtonColor: "#002D2D",
+        });
+
+        // Optional: Reset form or redirect
+      }
     });
-    console.log(data);
   };
 
   return (
