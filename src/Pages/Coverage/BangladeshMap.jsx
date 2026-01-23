@@ -1,5 +1,5 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import warehousesData from "../../assets/data/warehouses.json";
 import L from "leaflet";
@@ -17,11 +17,25 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const BangladeshMap = () => {
+// Component to handle flying to location
+const MapFlyTo = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.flyTo(center, 12, {
+        animate: true,
+        duration: 1.5, // Smooth fly duration
+      });
+    }
+  }, [center, map]);
+  return null;
+};
+
+const BangladeshMap = ({ targetLocation }) => {
   const position = [23.685, 90.3563]; // Center of Bangladesh
 
   return (
-    <div className="w-full h-[500px] rounded-xl overflow-hidden shadow-lg border border-gray-200">
+    <div className="w-full h-[800px] rounded-xl overflow-hidden shadow-lg border border-gray-200">
       <MapContainer
         center={position}
         zoom={7}
@@ -29,9 +43,10 @@ const BangladeshMap = () => {
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
+        <MapFlyTo center={targetLocation} />
         {warehousesData.map((warehouse, index) => (
           <Marker
             key={index}

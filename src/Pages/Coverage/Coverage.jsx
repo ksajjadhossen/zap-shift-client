@@ -1,8 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import BangladeshMap from "./BangladeshMap";
 import { FiSearch } from "react-icons/fi";
+import warehousesData from "../../assets/data/warehouses.json";
 
 const Coverage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [targetLocation, setTargetLocation] = useState(null);
+
+  const handleSearch = () => {
+    if (!searchTerm) return;
+
+    // Convert search term to lowercase for case-insensitive matching
+    const normalizedSearch = searchTerm.toLowerCase();
+
+    // Find the warehouse matching the search term (city or district)
+    const foundWarehouse = warehousesData.find(
+      (warehouse) =>
+        warehouse.district.toLowerCase() === normalizedSearch ||
+        warehouse.city.toLowerCase() === normalizedSearch
+    );
+
+    if (foundWarehouse) {
+      // Set the target location to fly to
+      setTargetLocation([foundWarehouse.latitude, foundWarehouse.longitude]);
+    } else {
+      // Optional: Handle case where location is not found (e.g., alert or toast)
+      alert("Location not found in our coverage area.");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <div className="bg-[#F8FDF5] min-h-screen py-10 px-4 lg:px-20">
       <div className="max-w-7xl mx-auto bg-white rounded-3xl p-8 lg:p-12 shadow-sm">
@@ -20,8 +52,14 @@ const Coverage = () => {
                 type="text"
                 placeholder="Search here"
                 className="bg-transparent flex-grow outline-none text-gray-700 placeholder-gray-400"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
-              <button className="bg-[#C1F04C] hover:bg-[#b0e03c] text-[#002D2D] font-semibold px-8 py-2 rounded-full transition-colors">
+              <button
+                onClick={handleSearch}
+                className="bg-[#C1F04C] hover:bg-[#b0e03c] text-[#002D2D] font-semibold px-8 py-2 rounded-full transition-colors cursor-pointer"
+              >
                 Search
               </button>
             </div>
@@ -34,7 +72,7 @@ const Coverage = () => {
           </div>
 
           {/* Map Component */}
-          <BangladeshMap />
+          <BangladeshMap targetLocation={targetLocation} />
         </div>
       </div>
     </div>
