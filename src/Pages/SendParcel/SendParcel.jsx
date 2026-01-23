@@ -1,5 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import { toast, Toaster } from "react-hot-toast";
 import divisions from "../../assets/data/division.json";
 import warehouses from "../../assets/data/warehouses.json";
 
@@ -15,339 +16,424 @@ const SendParcel = () => {
     },
   });
 
-  const onSubmit = (data) => {
-    console.log("Parcel Booking Data:", data);
-    // Handle form submission logic here
-  };
-
-  // Watch divisions to filter districts dynamically
+  // Watch for dynamic filtering and radio selection
   const senderDivision = watch("senderDivision");
   const receiverDivision = watch("receiverDivision");
+  const parcelType = watch("parcelType");
 
-  // Filter districts based on selected division
-  const getDistricts = (selectedDivision) => {
-    if (!selectedDivision) return [];
-    return warehouses.filter((warehouse) => warehouse.region === selectedDivision);
+  const getDistricts = (division) => {
+    if (!division) return [];
+    const filtered = warehouses.filter((w) => w.region === division);
+    const districts = [...new Set(filtered.map((w) => w.district))];
+    return districts;
   };
 
   const senderDistricts = getDistricts(senderDivision);
   const receiverDistricts = getDistricts(receiverDivision);
 
+  const calculatePrice = (data) => {
+    const { senderDistrict, receiverDistrict, parcelType, weight } = data;
+    const isWithinCity = senderDistrict === receiverDistrict;
+    let price = 0;
+    const parcelWeight = parseFloat(weight) || 0;
+
+    if (parcelType === "document") {
+      price = isWithinCity ? 60 : 80;
+    } else {
+      if (parcelWeight <= 3) {
+        price = isWithinCity ? 110 : 150;
+      } else {
+        const extraWeight = Math.ceil(parcelWeight - 3);
+        const extraWeightCharge = extraWeight * 40;
+        if (isWithinCity) {
+          price = 110 + extraWeightCharge;
+        } else {
+          price = 150 + extraWeightCharge + 40;
+        }
+      }
+    }
+    return price;
+  };
+
+  const onSubmit = (data) => {
+    const price = calculatePrice(data);
+    toast.success(`Estimated Delivery Charge: ${price} Taka`, {
+      duration: 5000,
+      position: "top-center",
+      style: {
+        background: "#333",
+        color: "#fff",
+        fontSize: "18px",
+      },
+      icon: "💰",
+    });
+    console.log(data);
+  };
+
   return (
-    <div className="bg-[#F8FDF5] min-h-screen py-10 px-4 lg:px-20">
-      <div className="max-w-5xl mx-auto bg-white rounded-3xl p-8 lg:p-12 shadow-sm">
-        <h1 className="text-3xl font-bold text-[#002D2D] mb-8">Send A Parcel</h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <Toaster />
+      <div className="max-w-6xl mx-auto bg-white rounded-[30px] shadow-sm p-8 md:p-12">
+        <h2 className="text-[#002D2D] text-3xl font-bold mb-2">
+          Send A Parcel
+        </h2>
+        <h3 className="text-[#002D2D] text-xl font-bold mb-8">
+          Enter your parcel details
+        </h3>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Section 1: Parcel Details */}
-          <div className="mb-10">
-            <h2 className="text-xl font-bold text-[#002D2D] mb-6">
-              Enter your parcel details
-            </h2>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Parcel Type Radio */}
+          <div className="flex items-center gap-8 mb-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                value="document"
+                {...register("parcelType")}
+                className="radio radio-success radio-sm border-2"
+              />
+              <span
+                className={`font-semibold ${parcelType === "document" ? "text-[#002D2D]" : "text-gray-500"}`}
+              >
+                Document
+              </span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                value="non-document"
+                {...register("parcelType")}
+                className="radio radio-success radio-sm border-2"
+              />
+              <span
+                className={`font-semibold ${parcelType === "non-document" ? "text-[#002D2D]" : "text-gray-500"}`}
+              >
+                Not-Document
+              </span>
+            </label>
+          </div>
 
-            {/* Parcel Type (Radio) */}
-            <div className="flex gap-6 mb-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="document"
-                  className="radio radio-success radio-sm"
-                  {...register("parcelType")}
-                />
-                <span className="font-semibold text-[#002D2D]">Document</span>
+          {/* Parcel Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-xs font-bold text-gray-800 mb-2">
+                Parcel Name
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="not-document"
-                  className="radio radio-success radio-sm"
-                  {...register("parcelType")}
-                />
-                <span className="font-semibold text-[#002D2D]">Not-Document</span>
-              </label>
+              <input
+                type="text"
+                placeholder="Parcel Name"
+                {...register("parcelName", {
+                  required: "Parcel name is required",
+                })}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+              />
+              {errors.parcelName && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.parcelName.message}
+                </p>
+              )}
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Parcel Name */}
-              <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text font-semibold text-[#002D2D]">
-                    Parcel Name
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Parcel Name"
-                  className={`input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none ${
-                    errors.parcelName ? "input-error" : ""
-                  }`}
-                  {...register("parcelName", { required: "Parcel Name is required" })}
-                />
-                {errors.parcelName && (
-                  <span className="text-error text-sm mt-1">
-                    {errors.parcelName.message}
-                  </span>
-                )}
-              </div>
-
-              {/* Parcel Weight */}
-              <div className="form-control w-full">
-                <label className="label">
-                  <span className="label-text font-semibold text-[#002D2D]">
-                    Parcel Weight (KG)
-                  </span>
-                </label>
-                <input
-                  type="number"
-                  placeholder="Parcel Weight (KG)"
-                  className={`input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none ${
-                    errors.parcelWeight ? "input-error" : ""
-                  }`}
-                  {...register("parcelWeight", {
-                    required: "Weight is required",
-                    min: { value: 0.1, message: "Weight must be greater than 0" },
-                  })}
-                />
-                {errors.parcelWeight && (
-                  <span className="text-error text-sm mt-1">
-                    {errors.parcelWeight.message}
-                  </span>
-                )}
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-800 mb-2">
+                Parcel Weight (KG)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                placeholder="Parcel Weight (KG)"
+                {...register("weight", {
+                  required: "Weight is required",
+                  min: 0.1,
+                })}
+                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+              />
+              {errors.weight && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.weight.message}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* Section 2: Sender Details */}
-            <div>
-              <h2 className="text-lg font-bold text-[#002D2D] mb-4">
+          {/* Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Sender Column */}
+            <div className="space-y-6">
+              <h4 className="text-[#002D2D] font-bold text-lg mb-4">
                 Sender Details
-              </h2>
-              <div className="space-y-4">
-                {/* Sender Name */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Sender Name
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Sender Name"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("senderName", { required: "Sender Name is required" })}
-                  />
-                </div>
+              </h4>
 
-                {/* Sender Address */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Address
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Address"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("senderAddress", { required: "Address is required" })}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Sender Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Sender Name"
+                  {...register("senderName", {
+                    required: "Sender name is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
 
-                {/* Sender Phone */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Sender Phone No
-                    </span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="Sender Phone No"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("senderPhone", { required: "Phone is required" })}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Address"
+                  {...register("senderAddress", {
+                    required: "Address is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
 
-                {/* Sender Division (New) */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Sender Division
-                    </span>
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Sender Phone No
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Sender Phone No"
+                  {...register("senderPhone", {
+                    required: "Phone is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
+
+              {/* Division Select (Added for Logic) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Your Division
+                </label>
+                <div className="relative">
                   <select
-                    className="select select-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("senderDivision", { required: "Division is required" })}
+                    {...register("senderDivision", {
+                      required: "Division is required",
+                    })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-500 appearance-none focus:outline-none focus:border-[#C1F04C] transition-colors cursor-pointer"
                   >
-                    <option value="">Select Division</option>
-                    {divisions.map((div, index) => (
-                      <option key={index} value={div}>
+                    <option value="">Select your Division</option>
+                    {divisions.map((div) => (
+                      <option key={div} value={div}>
                         {div}
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                {/* Sender District */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Your District
-                    </span>
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Your District
+                </label>
+                <div className="relative">
                   <select
-                    className="select select-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("senderDistrict", { required: "District is required" })}
+                    {...register("senderDistrict", {
+                      required: "District is required",
+                    })}
                     disabled={!senderDivision}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-500 appearance-none focus:outline-none focus:border-[#C1F04C] transition-colors cursor-pointer disabled:bg-gray-50"
                   >
                     <option value="">Select your District</option>
-                    {senderDistricts.map((warehouse, index) => (
-                      <option key={index} value={warehouse.district}>
-                        {warehouse.district}
+                    {senderDistricts.map((dist) => (
+                      <option key={dist} value={dist}>
+                        {dist}
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                {/* Pickup Instruction */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Pickup Instruction
-                    </span>
-                  </label>
-                  <textarea
-                    className="textarea textarea-bordered h-24 bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none resize-none"
-                    placeholder="Pickup Instruction"
-                    {...register("pickupInstruction")}
-                  ></textarea>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Pickup Instruction
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Pickup Instruction"
+                  {...register("pickupInstruction")}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors resize-none"
+                ></textarea>
               </div>
             </div>
 
-            {/* Section 3: Receiver Details */}
-            <div>
-              <h2 className="text-lg font-bold text-[#002D2D] mb-4">
+            {/* Receiver Column */}
+            <div className="space-y-6">
+              <h4 className="text-[#002D2D] font-bold text-lg mb-4">
                 Receiver Details
-              </h2>
-              <div className="space-y-4">
-                {/* Receiver Name */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Receiver Name
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Receiver Name"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("receiverName", {
-                      required: "Receiver Name is required",
-                    })}
-                  />
-                </div>
+              </h4>
 
-                {/* Receiver Address */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Receiver Address
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Address"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("receiverAddress", { required: "Address is required" })}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Receiver Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Sender Name"
+                  {...register("receiverName", {
+                    required: "Receiver name is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
 
-                {/* Receiver Contact */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Receiver Contact No
-                    </span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="Receiver Contact No"
-                    className="input input-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
-                    {...register("receiverContact", { required: "Contact is required" })}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Receiver Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Address"
+                  {...register("receiverAddress", {
+                    required: "Address is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
 
-                {/* Receiver Division (New) */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Receiver Division
-                    </span>
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Receiver Contact No
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Sender Contact No"
+                  {...register("receiverPhone", {
+                    required: "Phone is required",
+                  })}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors"
+                />
+              </div>
+
+              {/* Division Select (Added for Logic) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Receiver Division
+                </label>
+                <div className="relative">
                   <select
-                    className="select select-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
                     {...register("receiverDivision", {
                       required: "Division is required",
                     })}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-500 appearance-none focus:outline-none focus:border-[#C1F04C] transition-colors cursor-pointer"
                   >
-                    <option value="">Select Division</option>
-                    {divisions.map((div, index) => (
-                      <option key={index} value={div}>
+                    <option value="">Select receiver Division</option>
+                    {divisions.map((div) => (
+                      <option key={div} value={div}>
                         {div}
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                {/* Receiver District */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Receiver District
-                    </span>
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Receiver District
+                </label>
+                <div className="relative">
                   <select
-                    className="select select-bordered w-full bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none"
                     {...register("receiverDistrict", {
                       required: "District is required",
                     })}
                     disabled={!receiverDivision}
+                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-500 appearance-none focus:outline-none focus:border-[#C1F04C] transition-colors cursor-pointer disabled:bg-gray-50"
                   >
                     <option value="">Select your District</option>
-                    {receiverDistricts.map((warehouse, index) => (
-                      <option key={index} value={warehouse.district}>
-                        {warehouse.district}
+                    {receiverDistricts.map((dist) => (
+                      <option key={dist} value={dist}>
+                        {dist}
                       </option>
                     ))}
                   </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+                    <svg
+                      className="w-4 h-4 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
+              </div>
 
-                {/* Delivery Instruction */}
-                <div className="form-control w-full">
-                  <label className="label">
-                    <span className="label-text font-semibold text-[#002D2D]">
-                      Delivery Instruction
-                    </span>
-                  </label>
-                  <textarea
-                    className="textarea textarea-bordered h-24 bg-white border-gray-200 focus:border-[#C1F04C] focus:outline-none resize-none"
-                    placeholder="Delivery Instruction"
-                    {...register("deliveryInstruction")}
-                  ></textarea>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-2">
+                  Delivery Instruction
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Delivery Instruction"
+                  {...register("deliveryInstruction")}
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-[#C1F04C] transition-colors resize-none"
+                ></textarea>
               </div>
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="text-sm text-gray-500 mb-6">
+          <div className="mt-8">
+            <p className="text-sm font-bold text-gray-800 mb-6">
               * PickUp Time 4pm-7pm Approx.
             </p>
             <button
               type="submit"
-              className="btn bg-[#C1F04C] hover:bg-[#b0e03c] text-[#002D2D] font-bold px-8 normal-case rounded-lg"
+              className="px-8 py-3 bg-[#C1F04C] hover:bg-[#aee035] text-[#002D2D] font-bold rounded-lg text-sm transition-all duration-200 shadow-sm"
             >
               Proceed to Confirm Booking
             </button>
